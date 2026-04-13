@@ -228,6 +228,116 @@ h1 {
   font-weight: 700;
 }
 
+.focus-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-content: center;
+  gap: 14px;
+  padding: 24px;
+  text-align: center;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(248, 113, 113, 0.25), transparent 45%),
+    radial-gradient(circle at 80% 15%, rgba(252, 211, 77, 0.2), transparent 40%),
+    linear-gradient(140deg, #111827, #1f2937 55%, #374151);
+  color: #fff;
+}
+
+.focus-fullscreen-phase {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.focus-fullscreen-task {
+  margin: 0;
+  font-size: clamp(32px, 5vw, 64px);
+  line-height: 1.15;
+}
+
+.focus-fullscreen-time {
+  font-size: clamp(72px, 16vw, 180px);
+  font-weight: 700;
+  line-height: 1;
+  color: #fca5a5;
+  text-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+}
+
+.focus-fullscreen-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.focus-fullscreen-btn {
+  border: 1px solid transparent;
+  border-radius: 12px;
+  min-width: 110px;
+  padding: 12px 18px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.focus-fullscreen-btn-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.focus-fullscreen-btn-primary:hover {
+  background: var(--primary-dark);
+}
+
+.focus-fullscreen-btn-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #fff;
+}
+
+.focus-fullscreen-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.focus-fullscreen-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 20px;
+}
+
+.focus-fullscreen-confirm {
+  width: min(460px, 100%);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 14px;
+  padding: 18px;
+  text-align: left;
+  background: #111827;
+}
+
+.focus-fullscreen-confirm h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.focus-fullscreen-confirm p {
+  margin: 8px 0 0;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.focus-fullscreen-confirm-actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 @media (max-width: 720px) {
   .task-form {
     grid-template-columns: 1fr;
@@ -240,5 +350,22 @@ h1 {
   .task-item {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .focus-fullscreen {
+    padding: 20px;
+    gap: 10px;
+  }
+
+  .focus-fullscreen-phase {
+    font-size: 15px;
+  }
+
+  .focus-fullscreen-btn {
+    width: 100%;
+  }
+
+  .focus-fullscreen-confirm-actions {
+    justify-content: stretch;
   }
 }

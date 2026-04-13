@@ -163,6 +163,10 @@ function App() {
   const [draggingTaskId, setDraggingTaskId] = useState(null)
   const [dropIndicator, setDropIndicator] = useState(null)
   const [reorderNotice, setReorderNotice] = useState('')
+  const [isFocusFullscreen, setIsFocusFullscreen] = useState(false)
+  const [isFullscreenExitConfirmVisible, setIsFullscreenExitConfirmVisible] =
+    useState(false)
+  const isFullscreenActive = isFocusFullscreen && phase !== 'idle'
   const intervalRef = useRef(null)
   const dragRef = useRef({ isDragging: false, offsetX: 0, offsetY: 0 })
   const taskReorderRef = useRef({
@@ -367,6 +371,30 @@ function App() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!isFullscreenActive) return
+
+    const handleKeyDown = (event) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      setIsFullscreenExitConfirmVisible((prev) => !prev)
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isFullscreenActive])
+
+  useEffect(() => {
+    if (!isFullscreenActive) return
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isFullscreenActive])
+
   const reorderTasks = useCallback(
     (sourceTaskId, targetTaskId, placement) => {
       setTasks((prev) => {
@@ -512,6 +540,8 @@ function App() {
   }
 
   const startTask = (taskId) => {
+    setIsFocusFullscreen(true)
+    setIsFullscreenExitConfirmVisible(false)
     setActiveTaskId(taskId)
     setPhase('focus')
     setIsOrchestrationRunning(false)
@@ -573,6 +603,8 @@ function App() {
     if (firstIndex < 0) return
 
     const target = tasks[firstIndex]
+    setIsFocusFullscreen(true)
+    setIsFullscreenExitConfirmVisible(false)
     setCurrentTaskIndex(firstIndex)
     setActiveTaskId(target.id)
     setPhase('focus')
@@ -605,6 +637,8 @@ function App() {
     }
 
     if (phase === 'focus' && activeTaskId) {
+      setIsFocusFullscreen(true)
+      setIsFullscreenExitConfirmVisible(false)
       setTasks((prev) =>
         prev.map((task) =>
           task.id === activeTaskId ? { ...task, status: 'running' } : task,
@@ -615,6 +649,8 @@ function App() {
     }
 
     if (phase === 'break' && breakRemainingSec > 0) {
+      setIsFocusFullscreen(true)
+      setIsFullscreenExitConfirmVisible(false)
       setIsOrchestrationRunning(true)
       return
     }
@@ -645,9 +681,24 @@ function App() {
     event.currentTarget.setPointerCapture(event.pointerId)
   }
 
+  const requestExitFullscreen = () => {
+    setIsFullscreenExitConfirmVisible(true)
+  }
+
+  const confirmExitFullscreen = () => {
+    setIsFocusFullscreen(false)
+    setIsFullscreenExitConfirmVisible(false)
+  }
+
+  const cancelExitFullscreen = () => {
+    setIsFullscreenExitConfirmVisible(false)
+  }
+
   return (
-    <main className="app">
-      <section className="panel">
+    <>
+      {!isFullscreenActive && (
+        <main className="app">
+          <section className="panel">
         <h1>番茄钟</h1>
         <p className="subtitle">添加任务并按编排顺序自动专注与休息。</p>
 
@@ -797,34 +848,101 @@ function App() {
             )
           })}
         </ul>
-      </section>
+          </section>
 
-      <button
-        className="floating-toggle"
-        onClick={() => setIsFloatingVisible((prev) => !prev)}
-      >
-        {isFloatingVisible ? '隐藏悬浮窗' : '显示悬浮窗'}
-      </button>
+          <button
+            className="floating-toggle"
+            onClick={() => setIsFloatingVisible((prev) => !prev)}
+          >
+            {isFloatingVisible ? '隐藏悬浮窗' : '显示悬浮窗'}
+          </button>
 
-      {isFloatingVisible && (
-        <aside
-          className="floating-window"
-          style={{ left: floatingPosition.x, top: floatingPosition.y }}
-          onPointerDown={handleFloatingPointerDown}
-        >
-          <p className="floating-title">{phaseLabel}</p>
-          <p className="floating-task">
-            {phase === 'break' ? '休息中' : activeTask?.title ?? '暂无任务'}
-          </p>
-          <p className="floating-time">{formatTime(orchestrationTime)}</p>
-          {phase === 'focus' && activeTask && activeTask.status === 'running' ? (
-            <button onClick={() => pauseTask(activeTask.id)}>暂停</button>
-          ) : phase === 'focus' && activeTask ? (
-            <button onClick={() => startTask(activeTask.id)}>继续</button>
-          ) : null}
-        </aside>
+          {isFloatingVisible && (
+            <aside
+              className="floating-window"
+              style={{ left: floatingPosition.x, top: floatingPosition.y }}
+              onPointerDown={handleFloatingPointerDown}
+            >
+              <p className="floating-title">{phaseLabel}</p>
+              <p className="floating-task">
+                {phase === 'break' ? '休息中' : activeTask?.title ?? '暂无任务'}
+              </p>
+              <p className="floating-time">{formatTime(orchestrationTime)}</p>
+              {phase === 'focus' && activeTask && activeTask.status === 'running' ? (
+                <button onClick={() => pauseTask(activeTask.id)}>暂停</button>
+              ) : phase === 'focus' && activeTask ? (
+                <button onClick={() => startTask(activeTask.id)}>继续</button>
+              ) : null}
+            </aside>
+          )}
+        </main>
       )}
-    </main>
+
+      {isFullscreenActive && (
+        <section className="focus-fullscreen" role="dialog" aria-modal="true">
+          <p className="focus-fullscreen-phase">{phaseLabel}</p>
+          <h2 className="focus-fullscreen-task">
+            {phase === 'break'
+              ? '休息时间'
+              : activeTask?.title ?? '暂无运行中的任务'}
+          </h2>
+          <div className="focus-fullscreen-time">{formatTime(orchestrationTime)}</div>
+          <div className="focus-fullscreen-actions">
+            {phase === 'focus' && activeTask ? (
+              activeTask.status === 'running' ? (
+                <button
+                  type="button"
+                  className="focus-fullscreen-btn focus-fullscreen-btn-primary"
+                  onClick={() => pauseTask(activeTask.id)}
+                >
+                  暂停
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="focus-fullscreen-btn focus-fullscreen-btn-primary"
+                  onClick={() => startTask(activeTask.id)}
+                >
+                  继续
+                </button>
+              )
+            ) : null}
+            <button
+              type="button"
+              className="focus-fullscreen-btn focus-fullscreen-btn-secondary"
+              onClick={requestExitFullscreen}
+            >
+              退出
+            </button>
+          </div>
+
+          {isFullscreenExitConfirmVisible && (
+            <div className="focus-fullscreen-confirm-backdrop">
+              <div className="focus-fullscreen-confirm">
+                <h3>确认退出全屏？</h3>
+                <p>退出后计时会继续进行。</p>
+                <div className="focus-fullscreen-confirm-actions">
+                  <button
+                    type="button"
+                    className="focus-fullscreen-btn focus-fullscreen-btn-secondary"
+                    onClick={cancelExitFullscreen}
+                  >
+                    取消
+                  </button>
+                  <button
+                    type="button"
+                    className="focus-fullscreen-btn focus-fullscreen-btn-primary"
+                    onClick={confirmExitFullscreen}
+                  >
+                    确认退出
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+    </>
   )
 }
 
